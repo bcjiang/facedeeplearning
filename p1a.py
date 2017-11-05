@@ -1,8 +1,47 @@
 import torch
-from torch.autograd import Variable
+import os
+import cv2
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
+import matplotlib.pyplot as plt 
+import numpy as np
+from torch.autograd import Variable
 from torch import optim
+from torch.utils.data import Dataset, DataLoader
+
+
+# Define dataset class
+class FaceDateSet(Dataset):
+    """lfw face data set."""
+
+    def __init__(self, root_dir, split_file, transform = None):
+        self.root_dir = root_dir
+        self.split_file = split_file
+        self.transform = transform
+        self.img_paths = self.parse_files()
+
+    def __len__(self):
+        return len(self.img_paths)
+
+    def __getitem__(self, idx):
+        # Get items from path here
+        img1_path = os.path.join(self.root_dir, self.img_paths[idx][0])
+        img2_path = os.path.join(self.root_dir, self.img_paths[idx][1])
+        img_label = os.path.join(self.root_dir, self.img_paths[idx][2])
+        img1 = cv2.imread(img1_path)
+        img2 = cv2.imread(img2_path)
+        sample = {'img1': img1, 'img2': img2, 'label': label}
+        return sample
+
+    def parse_files(self):
+        img_paths = []
+        with open(self.split_file) as f:
+            img_paths = f.readlines()
+        img_paths = [x.split() for x in content]
+        return img_paths
+
 
 class SiameseNet(nn.Module):
 
@@ -58,6 +97,11 @@ class BCEloss(nn.Module):
     def forward(self,output,label):
         loss = F.binary_cross_entropy_with_logits(output,label)
         return loss
+
+
+# Training process
+face_train = FaceDateSet(root_dir='lfw', split_file='train.txt')
+train_loader = DataLoader(face_train, batch_size=4, shuffle=True, num_workers=4)
 
 # Training the net
 net = SiameseNet()
