@@ -29,17 +29,17 @@ class FaceDateSet(Dataset):
         # Get items from path here
         img1_path = os.path.join(self.root_dir, self.img_paths[idx][0])
         img2_path = os.path.join(self.root_dir, self.img_paths[idx][1])
-        img_label = os.path.join(self.root_dir, self.img_paths[idx][2])
+        img_label = int(self.img_paths[idx][2])
         img1 = cv2.imread(img1_path)
         img2 = cv2.imread(img2_path)
-        sample = {'img1': img1, 'img2': img2, 'label': label}
+        sample = {'img1': img1, 'img2': img2, 'label': img_label}
         return sample
 
     def parse_files(self):
         img_paths = []
         with open(self.split_file) as f:
             img_paths = f.readlines()
-        img_paths = [x.split() for x in content]
+        img_paths = [x.split() for x in img_paths]
         return img_paths
 
 
@@ -72,7 +72,7 @@ class SiameseNet(nn.Module):
         )
 
         self.nn3 = nn.Sequential(
-            nn.Linear(2048, 1)
+            nn.Linear(2048, 1),
             nn.Sigmoid()
         )
 
@@ -109,16 +109,16 @@ optimizer = optim.Adam(net.parameters(), lr = 0.0005)
 loss_function = BCEloss()
 total_epoch_num = 100
 for epoch in range(total_epoch_num):
-    for batch_idx, (imgs, labels) in enumerate(train_loader):
-        x = Variable(imgs)
-        y = Variable(labels)
-        optimizer.zero_grad()
-        y_pred = net(img_input1,img_input2)
-        bce_loss = loss_function(y_pred,y)
-        bce_loss.backward()
-        optimizer.step()
+    for batch_idx, batch_sample in enumerate(train_loader):
+        # x = Variable(imgs)
+        # y = Variable(labels)
+        # optimizer.zero_grad()
+        # y_pred = net(img_input1,img_input2)
+        # bce_loss = loss_function(y_pred,y)
+        # bce_loss.backward()
+        # optimizer.step()
 
-        if batch_idx % 100 == 0:
-            print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
+        # if batch_idx % 100 == 0:
+        #     print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
     
 # Test the net
