@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
+import torchvision.utils as utils
 import matplotlib.pyplot as plt 
 import numpy as np
 from torch.autograd import Variable
@@ -32,6 +33,9 @@ class FaceDateSet(Dataset):
         img_label = int(self.img_paths[idx][2])
         img1 = cv2.imread(img1_path)
         img2 = cv2.imread(img2_path)
+        if self.transform is not None:
+            img1 = self.transform(img1)
+            img2 = self.transform(img2)
         sample = {'img1': img1, 'img2': img2, 'label': img_label}
         return sample
 
@@ -98,9 +102,16 @@ class BCEloss(nn.Module):
         loss = F.binary_cross_entropy_with_logits(output,label)
         return loss
 
+# Helper functions
+def imshow(img):
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1,2,0)))
+    plt.show()
+
 
 # Training process
-face_train = FaceDateSet(root_dir='lfw', split_file='train.txt')
+data_trans = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
+face_train = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans)
 train_loader = DataLoader(face_train, batch_size=4, shuffle=True, num_workers=4)
 
 # Training the net
@@ -110,15 +121,17 @@ loss_function = BCEloss()
 total_epoch_num = 100
 for epoch in range(total_epoch_num):
     for batch_idx, batch_sample in enumerate(train_loader):
-        # x = Variable(imgs)
-        # y = Variable(labels)
-        # optimizer.zero_grad()
-        # y_pred = net(img_input1,img_input2)
-        # bce_loss = loss_function(y_pred,y)
-        # bce_loss.backward()
-        # optimizer.step()
+        img1 = batch_sample['img1']
+        img2 = batch_sample['img2']
+        label = batch_sample['label']
+        img1, img2, label = Variable(img1), Variable(img2), Variable(label)
+        optimizer.zero_grad()
+        y_pred = net(img1, img2)
+        bce_loss = loss_function(y_pred, y)
+        bce_loss.backward()
+        optimizer.step()
 
-        # if batch_idx % 100 == 0:
-        #     print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
+        if batch_idx % 10 == 0:
+            print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
     
 # Test the net
