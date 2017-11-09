@@ -30,7 +30,7 @@ class FaceDateSet(Dataset):
         # Get items from path here
         img1_path = os.path.join(self.root_dir, self.img_paths[idx][0])
         img2_path = os.path.join(self.root_dir, self.img_paths[idx][1])
-        img_label = int(self.img_paths[idx][2])
+        img_label = float(self.img_paths[idx][2])
         img1 = cv2.imread(img1_path)
         img2 = cv2.imread(img2_path)
         if self.transform is not None:
@@ -46,7 +46,7 @@ class FaceDateSet(Dataset):
         img_paths = [x.split() for x in img_paths]
         return img_paths
 
-
+# Define deep neural network
 class SiameseNet(nn.Module):
 
     def __init__(self):
@@ -89,49 +89,36 @@ class SiameseNet(nn.Module):
     def forward(self,x1,x2):
         output1 = self.net_forward(x1)
         output2 = self.net_forward(x2)
-        output12 = torch.cat((output1,output2))
+        output12 = torch.cat((output1,output2),1)
         output = self.nn3(output12)
         return output
 
-# Define BCE loss
-class BCEloss(nn.Module):
-    def __init__(self):
-        super(BCEloss, self).__init__()
-
-    def forward(self,output,label):
-        loss = F.binary_cross_entropy_with_logits(output,label)
-        return loss
-
-# Helper functions
-def imshow(img):
-    npimg = img.numpy()
-    plt.imshow(np.transpose(npimg, (1,2,0)))
-    plt.show()
-
-
-# Training process
+# Training process setup
 data_trans = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
 face_train = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans)
 train_loader = DataLoader(face_train, batch_size=4, shuffle=True, num_workers=4)
 
 # Training the net
-net = SiameseNet()
-optimizer = optim.Adam(net.parameters(), lr = 0.0005)
-loss_function = BCEloss()
-total_epoch_num = 100
-for epoch in range(total_epoch_num):
+net = SiameseNet().cuda()
+optimizer = optim.Adam(net.parameters(), lr = 1e-6)
+loss_fn = nn.BCELoss()
+total_epoch = 1000
+for epoch in range(total_epoch):
     for batch_idx, batch_sample in enumerate(train_loader):
         img1 = batch_sample['img1']
         img2 = batch_sample['img2']
-        label = batch_sample['label']
-        img1, img2, label = Variable(img1), Variable(img2), Variable(label)
+        label = batch_sample['label'].float()
+        label = label.view(label.numel(),-1)
+        img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
         optimizer.zero_grad()
         y_pred = net(img1, img2)
-        bce_loss = loss_function(y_pred, y)
+        bce_loss = loss_fn(y_pred, y)
         bce_loss.backward()
         optimizer.step()
 
-        if batch_idx % 10 == 0:
+        if batch_idx % 50 == 0:
             print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
     
-# Test the net
+# Save the trained network
+model.save_state_dict(net.state_dict(),'./model_best.pth.tar')
+
