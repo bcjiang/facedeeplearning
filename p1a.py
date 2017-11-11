@@ -95,13 +95,13 @@ class SiameseNet(nn.Module):
 # Training process setup
 data_trans = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
 face_train = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans)
-train_loader = DataLoader(face_train, batch_size=4, shuffle=True, num_workers=4)
+train_loader = DataLoader(face_train, batch_size=8, shuffle=True, num_workers=4)
 
 # Training the net
 net = SiameseNet().cuda()
 optimizer = optim.Adam(net.parameters(), lr = 1e-6)
 loss_fn = nn.BCELoss()
-total_epoch = 1000
+total_epoch = 30 
 for epoch in range(total_epoch):
     for batch_idx, batch_sample in enumerate(train_loader):
         img1 = batch_sample['img1']
@@ -119,5 +119,5 @@ for epoch in range(total_epoch):
             print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
     
 # Save the trained network
-model.save_state_dict(net.state_dict(),'./model_best.pth.tar')
+torch.save(net.state_dict(),'./model_best.pth.tar')
 
