@@ -1,6 +1,7 @@
 import torch
 import os
 import cv2
+import argparse
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.datasets as dset
@@ -11,6 +12,11 @@ from torch.autograd import Variable
 from torch import optim
 from torch.utils.data import Dataset, DataLoader
 
+# Parsing arguments
+parser = argparse.ArgumentParser(description='Face recognition using BCELoss.')
+parser.add_argument('--load', type = str, help = 'Using trained parameter to test on both train and test sets.')
+parser.add_argument('--save', type = str, help = 'Train the model using splitting file provided.')
+args = parser.parse_args()
 
 # Define dataset class
 class FaceDateSet(Dataset):
@@ -92,32 +98,46 @@ class SiameseNet(nn.Module):
         output = self.nn3(output12)
         return output
 
-# Training process setup
-data_trans = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
-face_train = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans)
-train_loader = DataLoader(face_train, batch_size=8, shuffle=True, num_workers=4)
+# Switch to training
+if args.save != None: 
+    weights_dir = args.save
 
-# Training the net
-net = SiameseNet().cuda()
-optimizer = optim.Adam(net.parameters(), lr = 1e-6)
-loss_fn = nn.BCELoss()
-total_epoch = 30 
-for epoch in range(total_epoch):
-    for batch_idx, batch_sample in enumerate(train_loader):
-        img1 = batch_sample['img1']
-        img2 = batch_sample['img2']
-        label = batch_sample['label'].float()
-        label = label.view(label.numel(),-1)
-        img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
-        optimizer.zero_grad()
-        y_pred = net(img1, img2)
-        bce_loss = loss_fn(y_pred, y)
-        bce_loss.backward()
-        optimizer.step()
+    # Training process setup
+    data_trans = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
+    face_train = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans)
+    train_loader = DataLoader(face_train, batch_size=8, shuffle=True, num_workers=4)
 
-        if batch_idx % 50 == 0:
-            print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
-    
-# Save the trained network
-torch.save(net.state_dict(),'./model_best.pth.tar')
+    # Training the net
+    net = SiameseNet().cuda()
+    optimizer = optim.Adam(net.parameters(), lr = 1e-6)
+    loss_fn = nn.BCELoss()
+    total_epoch = 30 
+    for epoch in range(total_epoch):
+        for batch_idx, batch_sample in enumerate(train_loader):
+            img1 = batch_sample['img1']
+            img2 = batch_sample['img2']
+            label = batch_sample['label'].float()
+            label = label.view(label.numel(),-1)
+            img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
+            optimizer.zero_grad()
+            y_pred = net(img1, img2)
+            bce_loss = loss_fn(y_pred, y)
+            bce_loss.backward()
+            optimizer.step()
 
+            if batch_idx % 50 == 0:
+                print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
+        
+    # Save the trained network
+    torch.save(net.state_dict(), weights_dir)
+
+# Switching to testing
+elif args.load != None: 
+    if os.path.isfile(args.load):
+        weights_file = args.load
+        # Start testing
+    else:
+        print "Parameter file does not exist!"
+
+else:
+    print "Please use [-h] for help on the usage."
