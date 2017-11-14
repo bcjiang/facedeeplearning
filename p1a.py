@@ -142,28 +142,31 @@ elif args.load != None:
         # Testing on the training data
         data_trans1 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
         face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
+        # test1_loader = DataLoader(face_test1, batch_size=1, shuffle=True, num_workers=4)
+        # data_iter1 = iter(test1_loader)
         total_loss = 0.0
         for i in range(len(face_test1)):
-            y_pred = net(face_test1[i]['img1'], face_test1[i]['img2'])
-            y = face_test1[i]['label'].float()
-            y = y.view(y.numel(),-1)
+            y_pred = net(Variable(face_test1[i]['img1']).cuda(), Variable(face_test1[i]['img2']).cuda())
+            label = face_test1[i]['label'].float()
+            label = label.view(label.numel(),-1)
+            y = Variable(label).cuda()
             bce_loss = loss_fn(y_pred, y)
             total_loss += bce_loss
         mean_loss = total_loss / len(face_test1).float()
         print "Average BCE loss on training data is: ", mean_loss
 
-        # Testing on the testing data
-        total_loss = 0.0
-        data_trans2 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
-        face_test2 = FaceDateSet(root_dir='lfw', split_file='test.txt', transform = data_trans2)
-        for i in range(len(face_test2)):
-            y_pred = net(face_test2[i]['img1'], face_test2[i]['img2'])
-            y = face_test2[i]['label'].float()
-            y = y.view(y.numel(),-1)
-            bce_loss = loss_fn(y_pred, y)
-            total_loss += bce_loss
-        mean_loss = total_loss / len(face_test2).float()
-        print "Average BCE loss on testing data is: ", mean_loss
+        # # Testing on the testing data
+        # total_loss = 0.0
+        # data_trans2 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
+        # face_test2 = FaceDateSet(root_dir='lfw', split_file='test.txt', transform = data_trans2)
+        # for i in range(len(face_test2)):
+        #     y_pred = net(face_test2[i]['img1'], face_test2[i]['img2'])
+        #     y = face_test2[i]['label'].float()
+        #     y = y.view(y.numel(),-1)
+        #     bce_loss = loss_fn(y_pred, y)
+        #     total_loss += bce_loss
+        # mean_loss = total_loss / len(face_test2).float()
+        # print "Average BCE loss on testing data is: ", mean_loss
 
     else:
         print "Parameter file does not exist!"
