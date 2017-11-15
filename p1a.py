@@ -21,7 +21,6 @@ args = parser.parse_args()
 # Define dataset class
 class FaceDateSet(Dataset):
     """lfw face data set."""
-
     def __init__(self, root_dir, split_file, transform = None):
         self.root_dir = root_dir
         self.split_file = split_file
