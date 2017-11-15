@@ -142,16 +142,19 @@ elif args.load != None:
         # Testing on the training data
         data_trans1 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
         face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
-        # test1_loader = DataLoader(face_test1, batch_size=1, shuffle=True, num_workers=4)
-        # data_iter1 = iter(test1_loader)
+        test1_loader = DataLoader(face_test1, batch_size=1, shuffle=False)
         total_loss = 0.0
-        for i in range(len(face_test1)):
-            y_pred = net(Variable(face_test1[i]['img1']).cuda(), Variable(face_test1[i]['img2']).cuda())
-            label = face_test1[i]['label'].float()
+        for batch_idx, batch_sample in enumerate(test1_loader):
+            img1 = batch_sample['img1']
+            img2 = batch_sample['img2']
+            label = batch_sample['label'].float()
             label = label.view(label.numel(),-1)
-            y = Variable(label).cuda()
+            img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
+            y_pred = net(img1, img2)
             bce_loss = loss_fn(y_pred, y)
-            total_loss += bce_loss
+            if batch_size % int(len(batch_size)/10) == 0:
+                print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
+            total_loss += bce_loss.data[0]
         mean_loss = total_loss / len(face_test1).float()
         print "Average BCE loss on training data is: ", mean_loss
 
