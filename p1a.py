@@ -152,10 +152,10 @@ elif args.load != None:
             img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
             y_pred = net(img1, img2)
             bce_loss = loss_fn(y_pred, y)
-            if batch_size % int(len(batch_size)/10) == 0:
+            if batch_idx % int(len(face_test1)/10) == 0:
                 print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
             total_loss += bce_loss.data[0]
-        mean_loss = total_loss / len(face_test1).float()
+        mean_loss = total_loss / float(len(face_test1))
         print "Average BCE loss on training data is: ", mean_loss
 
         # # Testing on the testing data
