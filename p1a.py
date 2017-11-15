@@ -158,18 +158,24 @@ elif args.load != None:
         mean_loss = total_loss / float(len(face_test1))
         print "Average BCE loss on training data is: ", mean_loss
 
-        # # Testing on the testing data
-        # total_loss = 0.0
-        # data_trans2 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
-        # face_test2 = FaceDateSet(root_dir='lfw', split_file='test.txt', transform = data_trans2)
-        # for i in range(len(face_test2)):
-        #     y_pred = net(face_test2[i]['img1'], face_test2[i]['img2'])
-        #     y = face_test2[i]['label'].float()
-        #     y = y.view(y.numel(),-1)
-        #     bce_loss = loss_fn(y_pred, y)
-        #     total_loss += bce_loss
-        # mean_loss = total_loss / len(face_test2).float()
-        # print "Average BCE loss on testing data is: ", mean_loss
+        # Testing on the testing data
+        data_trans2 = transforms.Compose([transforms.ToPILImage(),transforms.Scale((128,128)),transforms.ToTensor()])
+        face_test2 = FaceDateSet(root_dir='lfw', split_file='test.txt', transform = data_trans2)
+        test2_loader = DataLoader(face_test2, batch_size=1, shuffle=False)
+        total_loss = 0.0
+        for batch_idx, batch_sample in enumerate(test2_loader):
+            img1 = batch_sample['img1']
+            img2 = batch_sample['img2']
+            label = batch_sample['label'].float()
+            label = label.view(label.numel(),-1)
+            img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
+            y_pred = net(img1, img2)
+            bce_loss = loss_fn(y_pred, y)
+            if batch_idx % int(len(face_test1)/10) == 0:
+                print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
+            total_loss += bce_loss.data[0]
+        mean_loss = total_loss / float(len(face_test1))
+        print "Average BCE loss on testing data is: ", mean_loss
 
     else:
         print "Parameter file does not exist!"
