@@ -115,7 +115,10 @@ if args.save != None:
     net = SiameseNet().cuda()
     optimizer = optim.Adam(net.parameters(), lr = 1e-6)
     loss_fn = nn.BCELoss()
-    total_epoch = 30 
+    total_epoch = 40
+    counter = []
+    loss_history = []
+    iteration = 0 
     for epoch in range(total_epoch):
         for batch_idx, batch_sample in enumerate(train_loader):
             img1 = batch_sample['img1']
@@ -129,11 +132,16 @@ if args.save != None:
             bce_loss.backward()
             optimizer.step()
 
-            if batch_idx % 50 == 0:
+            if batch_idx % 20 == 0:
                 print "Epoch %d, Batch %d Loss %f" % (epoch, batch_idx, bce_loss.data[0])
+                iteration += 20
+                counter.append(iteration)
+                loss_history.append(bce_loss.data[0])
         
     # Save the trained network
     torch.save(net.state_dict(), weights_dir)
+    plt.plot(counter,loss_history)
+    plt.show()
 
 # Switching to testing
 elif args.load != None: 
