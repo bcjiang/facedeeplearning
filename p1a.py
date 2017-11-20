@@ -25,7 +25,7 @@ args = parser.parse_args()
 # Setting up configuration
 configs = {"batch_train": 16, \
             "batch_test": 4, \
-            "epochs": 30, \
+            "epochs": 40, \
             "num_workers": 4, \
             "learning_rate": 1e-6, \
             "data_augment": True}
@@ -54,7 +54,8 @@ class FaceDateSet(Dataset):
         img2 = Image.open(img2_path)
         img1 = img1.convert('RGB')
         img2 = img2.convert('RGB')
-        if self.augment == True:
+        isaugment = (random.random() <= 0.7)
+        if self.augment == True and isaugment == True:
             isflip = (random.random() <= 0.7)
             if isflip == True:
                 img1 = img1.transpose(Image.FLIP_LEFT_RIGHT)
@@ -189,6 +190,10 @@ if args.save != None:
     total_hist = [counter, loss_history]
     with open("training_history.txt", "wb") as fp:
         pickle.dump(total_hist, fp)
+    with open("testsavefile.txt", "wb") as fp2:
+        pickle.dump([1,2,2,3,2], fp2)
+    with open("test222.txt", "wb") as fp3:
+        pickle.dump(loss_history, fp3)
     # plt.plot(counter,loss_history)
     # plt.show()
 
@@ -246,7 +251,7 @@ elif args.load != None:
             y_pred = net(img1, img2)
             bce_loss = loss_fn(y_pred, y)
             y_pred_round = torch.round(y_pred)
-            if batch_idx % int(len(face_test1)/configs['batch_test']/5) == 0:
+            if batch_idx % int(len(face_test2)/configs['batch_test']/5) == 0:
                 print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
             total_loss += bce_loss.data[0]
             total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
