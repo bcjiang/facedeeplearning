@@ -26,8 +26,8 @@ args = parser.parse_args()
 configs = {"batch_train": 16, \
             "batch_test": 4, \
             "epochs": 30, \
-            "num_workers": 4 \
-            "learning_rate": 1e-6 \
+            "num_workers": 4, \
+            "learning_rate": 1e-6, \
             "data_augment": True}
 
 # Define dataset class
