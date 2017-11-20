@@ -8,7 +8,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import torchvision.utils as utils
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from torch import optim
 from torch.utils.data import Dataset, DataLoader
@@ -156,7 +156,7 @@ elif args.load != None:
         # Testing on the training data
         data_trans1 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
         face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
-        test1_loader = DataLoader(face_test1, batch_size=4, shuffle=False)
+        test1_loader = DataLoader(face_test1, batch_size=1, shuffle=False)
         total_loss = 0.0
         total_correct = 0
 
@@ -170,19 +170,20 @@ elif args.load != None:
                             Variable(label,volatile=True).cuda()
             y_pred = net(img1, img2)
             bce_loss = loss_fn(y_pred, y)
+            y_pred_round = torch.round(y_pred)
             if batch_idx % int(len(face_test1)/20) == 0:
                 print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
             total_loss += bce_loss.data[0]
             total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
 
-        mean_loss = total_loss / float(len(face_test1))
+        mean_loss = total_loss / float(len(face_test1)/1.0)
         mean_correct = total_correct / float(len(face_test1))
         print "Average BCE loss on training data is: ", mean_loss, "\n Prediction accuracy is: ", mean_correct
 
-        # Testing on the training data
+        # Testing on the testing data
         data_trans2 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
         face_test2 = FaceDateSet(root_dir='lfw', split_file='test.txt', transform = data_trans2)
-        test2_loader = DataLoader(face_test2, batch_size=4, shuffle=False)
+        test2_loader = DataLoader(face_test2, batch_size=1, shuffle=False)
         total_loss = 0.0
         total_correct = 0
 
@@ -196,12 +197,13 @@ elif args.load != None:
                             Variable(label,volatile=True).cuda()
             y_pred = net(img1, img2)
             bce_loss = loss_fn(y_pred, y)
+            y_pred_round = torch.round(y_pred)
             if batch_idx % int(len(face_test2)/20) == 0:
                 print "Batch %d Loss %f" % (batch_idx, bce_loss.data[0])
             total_loss += bce_loss.data[0]
             total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
 
-        mean_loss = total_loss / float(len(face_test2))
+        mean_loss = total_loss / float(len(face_test2)/1.0)
         mean_correct = total_correct / float(len(face_test2))
         print "Average BCE loss on training data is: ", mean_loss, "\n Prediction accuracy is: ", mean_correct
 
