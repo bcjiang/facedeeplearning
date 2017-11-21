@@ -29,7 +29,7 @@ configs = {"batch_train": 16, \
             "learning_rate": 1e-6, \
             "data_augment": True, \
             "loss_margin": 1.0, \
-            "decision_thresh": 1.0}
+            "decision_thresh": 0.45}
 
 # Define dataset class
 class FaceDateSet(Dataset):
@@ -156,6 +156,7 @@ class ContrastiveLoss(nn.Module):
     def forward(self, output1, output2, label):
         d = F.pairwise_distance(output1, output2)
         loss = torch.mean((label) * torch.pow(d,2) +(1-label) * torch.pow(torch.clamp(self.margin - d, min=0.0), 2))
+        return loss
 
 # Switch to training
 if args.save != None: 
@@ -181,7 +182,6 @@ if args.save != None:
             label = batch_sample['label']
             img1, img2, y = Variable(img1).cuda(), Variable(img2).cuda(), Variable(label).cuda()
             optimizer.zero_grad()
-            # y_pred = net(img1, img2)
             feature1, feature2 = net(img1, img2)
             contr_loss = loss_fn(feature1, feature2, y)
             contr_loss.backward()
@@ -194,7 +194,6 @@ if args.save != None:
                 loss_history.append(contr_loss.data[0])
         
     # Save the trained network
-    torch.save(net.state_dict(), weights_dir)
     total_hist = [counter, loss_history]
     with open("training_history.txt", "wb") as fp:
         pickle.dump(total_hist, fp)
@@ -207,32 +206,34 @@ elif args.load != None:
         net = SiameseNet().cuda()
         net.load_state_dict(torch.load(weights_dir))
         net.eval()
-        loss_fn = nn.BCELoss()
 
-        # Testing on the training data
-        data_trans1 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
-        face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
-        test1_loader = DataLoader(face_test1, batch_size=configs['batch_test'], shuffle=False)
-        total_loss = 0.0
-        total_correct = 0
-
-        for batch_idx, batch_sample in enumerate(test1_loader):
-            img1 = batch_sample['img1']
-            img2 = batch_sample['img2']
-            label = batch_sample['label']
-            label = label.view(label.numel(),-1)
-            img1, img2, y = Variable(img1, volatile=True).cuda(), \
-                            Variable(img2, volatile=True).cuda(), \
-                            Variable(label,volatile=True).cuda()
-            feature1, feature2 = net(img1, img2)
-            distance = F.pairwise_distance(feature1, feature2)
-            y_pred_round = int(distance < configs['decision_thresh'])
-            if batch_idx % int(len(face_test1)/configs['batch_test']/5) == 0:
-                print "Batch %d feature distance %f" % (batch_idx, distance)
-            total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
-
-        mean_correct = total_correct / float(len(face_test1))
-        print "Prediction accuracy on training set is: ", mean_correct
+#        # Testing on the training data
+#        data_trans1 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
+#        face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
+#        test1_loader = DataLoader(face_test1, batch_size=configs['batch_test'], shuffle=False)
+#        total_loss = 0.0
+#        total_correct = 0
+#
+#        for batch_idx, batch_sample in enumerate(test1_loader):
+#            img1 = batch_sample['img1']
+#            img2 = batch_sample['img2']
+#            label = batch_sample['label']
+#            y = (label.view(label.numel(),-1)).cpu().numpy()
+#            img1, img2 = Variable(img1, volatile=True).cuda(), \
+#                         Variable(img2, volatile=True).cuda() \
+#                         #Variable(label,volatile=True).cuda()
+#            feature1, feature2 = net(img1, img2)
+#            distance = F.pairwise_distance(feature1, feature2)
+#            #print distance
+#            #print (distance.data < configs['decision_thresh']).cpu().numpy()
+#            y_pred_round = (distance.data < configs['decision_thresh']).cpu().numpy()
+#            if batch_idx % int(len(face_test1)/configs['batch_test']/5) == 0:
+#                print "Batch %d feature distance %f" % (batch_idx, (distance.data[0]).cpu().numpy())
+#            total_correct += (y_pred_round == y).sum()
+#            #total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
+#
+#        mean_correct = total_correct / float(len(face_test1))
+#        print "Prediction accuracy on training set is: ", mean_correct
 
         # Testing on the testing data
         data_trans2 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
@@ -245,16 +246,17 @@ elif args.load != None:
             img1 = batch_sample['img1']
             img2 = batch_sample['img2']
             label = batch_sample['label']
-            label = label.view(label.numel(),-1)
-            img1, img2, y = Variable(img1, volatile=True).cuda(), \
-                            Variable(img2, volatile=True).cuda(), \
-                            Variable(label,volatile=True).cuda()
+            y = (label.view(label.numel(),-1)).cpu().numpy()
+            img1, img2 = Variable(img1, volatile=True).cuda(), \
+                         Variable(img2, volatile=True).cuda() \
+                         # Variable(label,volatile=True).cuda()
             feature1, feature2 = net(img1, img2)
             distance = F.pairwise_distance(feature1, feature2)
-            y_pred_round = int(distance < configs['decision_thresh'])
+            y_pred_round = (distance.data < configs['decision_thresh']).cpu().numpy()
             if batch_idx % int(len(face_test2)/configs['batch_test']/5) == 0:
-                print "Batch %d feature distance %f" % (batch_idx, distance)
-            total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
+                print "Batch %d feature distance %f" % (batch_idx, (distance.data[0]).cpu().numpy())
+            total_correct += (y_pred_round == y).sum()
+            #total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
 
         mean_correct = total_correct / float(len(face_test2))
         print "Prediction accuracy on test set is: ", mean_correct
