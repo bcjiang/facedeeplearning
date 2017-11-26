@@ -26,10 +26,10 @@ configs = {"batch_train": 16, \
             "batch_test": 4, \
             "epochs": 40, \
             "num_workers": 4, \
-            "learning_rate": 1e-6, \
+            "learning_rate": 1e-5, \
             "data_augment": True, \
-            "loss_margin": 1.5, \
-            "decision_thresh": 0.90}
+            "loss_margin": 1.0, \
+            "decision_thresh": 10}
 
 # Define dataset class
 class FaceDateSet(Dataset):
@@ -90,7 +90,7 @@ class FaceDateSet(Dataset):
             isrotate = (random.random() <= 0.7)
             if isrotate == True:
                 angle = 30 - 60*random.random()
-                img1.rotate(angle)
+                img1 = img1.rotate(angle)
 
         if self.transform is not None:
             img1 = self.transform(img1)
@@ -133,7 +133,7 @@ class SiameseNet(nn.Module):
             nn.Linear(131072,1024),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(1024),
-            nn.Linear(1024,50)
+            #nn.Linear(1024,64)
         )
 
     def net_forward(self,x):
@@ -254,7 +254,7 @@ elif args.load != None:
             feature1, feature2 = net(img1, img2)
             distance = F.pairwise_distance(feature1, feature2)
             y_pred_round = (distance.data < configs['decision_thresh']).cpu().numpy()
-            if batch_idx % int(len(face_test2)/configs['batch_test']/5) == 0:
+            if batch_idx % int(len(face_test2)/configs['batch_test']/10) == 0:
                 print "Batch %d feature distance %f" % (batch_idx, (distance.data[0]).cpu().numpy())
             total_correct += (y_pred_round == y).sum()
             #total_correct += (y_pred_round.view(-1) == y.view(-1)).sum().float()
