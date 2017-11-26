@@ -26,10 +26,10 @@ configs = {"batch_train": 16, \
             "batch_test": 4, \
             "epochs": 40, \
             "num_workers": 4, \
-            "learning_rate": 1e-5, \
+            "learning_rate": 1e-6, \
             "data_augment": True, \
             "loss_margin": 1.0, \
-            "decision_thresh": 10}
+            "decision_thresh": 13}
 
 # Define dataset class
 class FaceDateSet(Dataset):
