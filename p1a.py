@@ -10,7 +10,6 @@ import torchvision.transforms as transforms
 import torchvision.utils as utils
 import numpy as np
 import pickle
-#import matplotlib.pyplot as plt
 from torch.autograd import Variable
 from torch import optim
 from torch.utils.data import Dataset, DataLoader
@@ -54,7 +53,8 @@ class FaceDateSet(Dataset):
         img2 = Image.open(img2_path)
         img1 = img1.convert('RGB')
         img2 = img2.convert('RGB')
-        isaugment = (random.random() <= 0.7)
+
+        isaugment = (random.random() <= 0.5)
         if self.augment == True and isaugment == True:
             isflip = (random.random() <= 0.7)
             if isflip == True:
@@ -88,7 +88,8 @@ class FaceDateSet(Dataset):
             isrotate = (random.random() <= 0.7)
             if isrotate == True:
                 angle = 30 - 60*random.random()
-                img1.rotate(angle)
+                img1 = img1.rotate(angle)
+
         if self.transform is not None:
             img1 = self.transform(img1)
             img2 = self.transform(img2)
@@ -190,12 +191,6 @@ if args.save != None:
     total_hist = [counter, loss_history]
     with open("training_history.txt", "wb") as fp:
         pickle.dump(total_hist, fp)
-    with open("testsavefile.txt", "wb") as fp2:
-        pickle.dump([1,2,2,3,2], fp2)
-    with open("test222.txt", "wb") as fp3:
-        pickle.dump(loss_history, fp3)
-    # plt.plot(counter,loss_history)
-    # plt.show()
 
 # Switching to testing
 elif args.load != None: 
