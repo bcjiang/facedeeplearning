@@ -194,6 +194,7 @@ if args.save != None:
                 loss_history.append(contr_loss.data[0])
         
     # Save the trained network
+    torch.save(net.state_dict(), weights_dir)
     total_hist = [counter, loss_history]
     with open("training_history.txt", "wb") as fp:
         pickle.dump(total_hist, fp)
