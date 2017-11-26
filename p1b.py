@@ -208,29 +208,29 @@ elif args.load != None:
         net.load_state_dict(torch.load(weights_dir))
         net.eval()
 
-       # Testing on the training data
-       data_trans1 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
-       face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
-       test1_loader = DataLoader(face_test1, batch_size=configs['batch_test'], shuffle=False)
-       total_loss = 0.0
-       total_correct = 0
+        # Testing on the training data
+        data_trans1 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
+        face_test1 = FaceDateSet(root_dir='lfw', split_file='train.txt', transform = data_trans1)
+        test1_loader = DataLoader(face_test1, batch_size=configs['batch_test'], shuffle=False)
+        total_loss = 0.0
+        total_correct = 0
 
-       for batch_idx, batch_sample in enumerate(test1_loader):
-           img1 = batch_sample['img1']
-           img2 = batch_sample['img2']
-           label = batch_sample['label']
-           y = (label.view(label.numel(),-1)).cpu().numpy()
-           img1, img2 = Variable(img1, volatile=True).cuda(), \
-                        Variable(img2, volatile=True).cuda()
-           feature1, feature2 = net(img1, img2)
-           distance = F.pairwise_distance(feature1, feature2)
-           y_pred_round = (distance.data < configs['decision_thresh']).cpu().numpy()
-           if batch_idx % int(len(face_test1)/configs['batch_test']/5) == 0:
-               print "Batch %d feature distance %f" % (batch_idx, (distance.data[0]).cpu().numpy())
-           total_correct += (y_pred_round == y).sum()
+        for batch_idx, batch_sample in enumerate(test1_loader):
+            img1 = batch_sample['img1']
+            img2 = batch_sample['img2']
+            label = batch_sample['label']
+            y = (label.view(label.numel(),-1)).cpu().numpy()
+            img1, img2 = Variable(img1, volatile=True).cuda(), \
+                         Variable(img2, volatile=True).cuda()
+            feature1, feature2 = net(img1, img2)
+            distance = F.pairwise_distance(feature1, feature2)
+            y_pred_round = (distance.data < configs['decision_thresh']).cpu().numpy()
+            if batch_idx % int(len(face_test1)/configs['batch_test']/5) == 0:
+                print "Batch %d feature distance %f" % (batch_idx, (distance.data[0]).cpu().numpy())
+            total_correct += (y_pred_round == y).sum()
 
-       mean_correct = total_correct / float(len(face_test1))
-       print "Prediction accuracy on training set is: ", mean_correct
+        mean_correct = total_correct / float(len(face_test1))
+        print "Prediction accuracy on training set is: ", mean_correct
 
         # Testing on the testing data
         data_trans2 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])

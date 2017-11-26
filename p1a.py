@@ -226,7 +226,8 @@ elif args.load != None:
 
         mean_loss = total_loss / float(len(face_test1)/configs['batch_test'])
         mean_correct = total_correct / float(len(face_test1))
-        print "Average BCE loss on training data is: ", mean_loss, "\n Prediction accuracy is: ", mean_correct
+        print "Average BCE loss on training data is: ", mean_loss 
+        print "Prediction accuracy on training set is: ", mean_correct
 
         # Testing on the testing data
         data_trans2 = transforms.Compose([transforms.Scale((128,128)),transforms.ToTensor()])
@@ -253,7 +254,8 @@ elif args.load != None:
 
         mean_loss = total_loss / float(len(face_test2)/configs['batch_test'])
         mean_correct = total_correct / float(len(face_test2))
-        print "Average BCE loss on training data is: ", mean_loss, "\n Prediction accuracy is: ", mean_correct
+        print "Average BCE loss on training data is: ", mean_loss
+        print "Prediction accuracy on test set is: ", mean_correct
 
     else:
         print "Parameter file does not exist!"
