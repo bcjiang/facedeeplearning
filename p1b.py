@@ -28,8 +28,8 @@ configs = {"batch_train": 16, \
             "num_workers": 4, \
             "learning_rate": 1e-6, \
             "data_augment": True, \
-            "loss_margin": 1.0, \
-            "decision_thresh": 0.45}
+            "loss_margin": 1.5, \
+            "decision_thresh": 0.90}
 
 # Define dataset class
 class FaceDateSet(Dataset):
@@ -56,7 +56,7 @@ class FaceDateSet(Dataset):
         img1 = img1.convert('RGB')
         img2 = img2.convert('RGB')
 
-        isaugment = (random.random() <= 0.7)
+        isaugment = (random.random() <= 0.5)
         if self.augment == True and isaugment == True:
             isflip = (random.random() <= 0.7)
             if isflip == True:
@@ -133,7 +133,7 @@ class SiameseNet(nn.Module):
             nn.Linear(131072,1024),
             nn.ReLU(inplace=True),
             nn.BatchNorm2d(1024),
-            nn.Linear(1024,5)
+            nn.Linear(1024,50)
         )
 
     def net_forward(self,x):
